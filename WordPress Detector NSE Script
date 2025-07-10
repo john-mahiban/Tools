@@ -1,0 +1,31 @@
+local http = require "http"
+local shortport = require "shortport"
+local stdnse = require "stdnse"
+local string = require "string"
+
+description = [[
+Detects whether a web server is running WordPress by checking for common WordPress indicators such as the presence of /wp-login.php, /wp-admin/, or /readme.html paths.
+]]
+
+author = "John Jeffrey Mahiban"
+license = "Same as Nmap--See https://nmap.org/book/man-legal.html"
+categories = {"discovery", "safe"}
+
+portrule = shortport.http
+
+action = function(host, port)
+  local base_path = stdnse.get_script_args("wordpress-detector.path") or "/"
+  local indicators = {"/wp-login.php", "/wp-admin/", "/readme.html"}
+  local found = {}
+
+  for _, path in ipairs(indicators) do
+    local response = http.get(host, port, base_path .. path)
+    if response and response.status == 200 then
+      table.insert(found, path)
+    end
+  end
+
+  if #found > 0 then
+    return "WordPress detected (found: " .. table.concat(found, ", ") .. ")"
+  end
+end
