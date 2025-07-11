@@ -1,0 +1,152 @@
+"""
+NTFS Alternate Data Streams (ADS) Tool
+Author: John Jeffrey Mahiban
+Website: rootkitdiaries.com
+
+This tool helps you find, extract, and hide data inside NTFS Alternate Data Streams on Windows.
+It's especially useful for forensic analysis or understanding how data can be hidden on a system.
+
+Features:
+- Scan folders recursively to find files with hidden ADS
+- List all ADS streams on a single file
+- Extract hidden data from an ADS stream to a separate file
+- Hide any file inside an ADS stream on another file
+
+Note: This tool only works on Windows with NTFS file systems.
+"""
+
+import os
+import subprocess
+import argparse
+import sys
+
+def list_ads(file_path):
+    """
+    Lists all ADS streams attached to a specific file using the Windows 'dir /r' command.
+    Returns a list of stream names found.
+    """
+    try:
+        # Run the 'dir /r' command to list ADS streams
+        result = subprocess.run(['cmd', '/c', f'dir /r "{file_path}"'], capture_output=True, text=True, shell=True)
+        lines = result.stdout.splitlines()
+        ads_list = []
+        for line in lines:
+            line = line.strip()
+            # Look for lines that show ADS streams with the :$DATA suffix
+            if ':' in line and '::$DATA' in line:
+                parts = line.split()
+                for part in parts:
+                    # Extract the ADS stream name, ignoring the main file
+                    if ':$DATA' in part and not part.startswith(file_path):
+                        ads_name = part[len(file_path)+1:].split(':$DATA')[0]
+                        ads_list.append(ads_name)
+        return ads_list
+    except Exception as e:
+        print(f"Oops! Couldn't list ADS for {file_path}. Error: {e}")
+        return []
+
+def scan_folder(folder_path):
+    """
+    Goes through all files in the folder and its subfolders,
+    looking for any files that have ADS streams attached.
+    Returns a list of (file, [ads streams]) pairs.
+    """
+    results = []
+    for root, dirs, files in os.walk(folder_path):
+        for f in files:
+            full_path = os.path.join(root, f)
+            ads = list_ads(full_path)
+            if ads:
+                results.append((full_path, ads))
+    return results
+
+def extract_ads(file_path, stream_name, output_file):
+    """
+    Extracts the content hidden in the specified ADS stream and
+    saves it as a separate file you can open or analyze.
+    """
+    ads_path = f"{file_path}:{stream_name}"
+    try:
+        with open(ads_path, 'rb') as src, open(output_file, 'wb') as dst:
+            data = src.read()
+            dst.write(data)
+        print(f"Success! Extracted ADS '{stream_name}' from '{file_path}' to '{output_file}'.")
+    except Exception as e:
+        print(f"Failed to extract ADS stream. Error: {e}")
+
+def hide_in_ads(file_path, stream_name, input_file):
+    """
+    Hides the contents of the input file inside an ADS stream of another file.
+    This lets you stealthily attach data without changing the main file.
+    """
+    ads_path = f"{file_path}:{stream_name}"
+    try:
+        with open(input_file, 'rb') as src, open(ads_path, 'wb') as dst:
+            data = src.read()
+            dst.write(data)
+        print(f"Cool! Hid '{input_file}' inside ADS '{stream_name}' of '{file_path}'.")
+    except Exception as e:
+        print(f"Oops, couldn't hide data in ADS. Error: {e}")
+
+def list_file_ads(file_path):
+    """
+    Shows all ADS streams for a single file, if any exist.
+    """
+    ads = list_ads(file_path)
+    if ads:
+        print(f"Found the following ADS streams for '{file_path}':")
+        for s in ads:
+            print(f"  - {s}")
+    else:
+        print(f"No ADS streams found for '{file_path}'.")
+
+def main():
+    parser = argparse.ArgumentParser(description="NTFS Alternate Data Streams (ADS) Tool by John Jeffrey Mahiban")
+    subparsers = parser.add_subparsers(dest='command', required=True, help='Choose one command to run')
+
+    # Scan command
+    scan_parser = subparsers.add_parser('scan', help='Scan a folder and all subfolders for files with hidden ADS')
+    scan_parser.add_argument('-d', '--directory', required=True, help='Folder to scan')
+
+    # List ADS streams on a single file
+    list_parser = subparsers.add_parser('list', help='List all ADS streams attached to a single file')
+    list_parser.add_argument('-f', '--file', required=True, help='File to check for ADS streams')
+
+    # Extract an ADS stream
+    extract_parser = subparsers.add_parser('extract', help='Extract an ADS stream to a separate file')
+    extract_parser.add_argument('-f', '--file', required=True, help='File with ADS')
+    extract_parser.add_argument('-s', '--stream', required=True, help='Name of the ADS stream to extract')
+    extract_parser.add_argument('-o', '--output', required=True, help='Where to save the extracted data')
+
+    # Hide data inside an ADS stream
+    hide_parser = subparsers.add_parser('hide', help='Hide a file inside an ADS stream on another file')
+    hide_parser.add_argument('-f', '--file', required=True, help='File to add ADS stream to')
+    hide_parser.add_argument('-s', '--stream', required=True, help='Name for the new ADS stream')
+    hide_parser.add_argument('-i', '--input', required=True, help='File whose contents you want to hide')
+
+    args = parser.parse_args()
+
+    if args.command == 'scan':
+        results = scan_folder(args.directory)
+        if results:
+            for file_path, streams in results:
+                print(f"\nFile: {file_path}")
+                for stream in streams:
+                    print(f"  Hidden ADS Stream: {stream}")
+        else:
+            print("No hidden ADS streams found in the specified directory.")
+
+    elif args.command == 'list':
+        list_file_ads(args.file)
+
+    elif args.command == 'extract':
+        extract_ads(args.file, args.stream, args.output)
+
+    elif args.command == 'hide':
+        hide_in_ads(args.file, args.stream, args.input)
+
+if __name__ == "__main__":
+    if os.name != 'nt':
+        print("Sorry, this tool only works on Windows with NTFS file systems.")
+        sys.exit(1)
+    main()
