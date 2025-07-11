@@ -27,7 +27,7 @@ def list_ads(file_path):
     """
     try:
         # Run the 'dir /r' command to list ADS streams
-        result = subprocess.run(['cmd', '/c', f'dir /r "{file_path}"'], capture_output=True, text=True, shell=True)
+        result = subprocess.run(['cmd', '/c', f'dir /r "{file_path}"'], capture_output=True, text=True)
         lines = result.stdout.splitlines()
         ads_list = []
         for line in lines:
