@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author - John Jeffrey Mahiban 
+# Author -John Jeffrey Mahiban 
 # About - This tool finds hash of a file (SHA1, SHA256, md5) 
 
 hashcheck() {
