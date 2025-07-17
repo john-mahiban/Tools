@@ -32,7 +32,7 @@ def scan_with_sherlock(username):
     try:
         result = subprocess.run(["sherlock", username, "--print-found"], capture_output=True, text=True)
     except FileNotFoundError:
-        cprint("Sherlock is not installed or not found in PATH.", "red")
+        cprint("Sherlock is not installed.", "red")
         return []
 
     links = []
@@ -85,22 +85,22 @@ def main():
     welcome_banner()
     username, output_file = ask_user()
 
-    # Step 1: Sherlock scan
+    # Sherlock scan
     profiles = scan_with_sherlock(username)
 
-    # Step 2: Instagram scraping
+    # Instagram scrap
     insta_bio = scrape_instagram_bio(username)
 
-    # Step 3: NLP-style parsing
+    #  NLP parsing
     tech, tags, mails = extract_keywords_and_emails(insta_bio or "")
 
-    # Step 4: Create final report
+    # final report
     report = build_report(username, profiles, insta_bio, tech, tags, mails)
 
-    # Step 5: Show results
+    # results
     cprint(json.dumps(report, indent=4), "green")
 
-    # Optional: save
+    #  save
     if output_file:
         with open(output_file, "w") as f:
             json.dump(report, f, indent=4)
