@@ -1,4 +1,4 @@
-"""
+"
 PF-ADS Correlator - Prefetch Analyzer (starter)
 Author: John Jeffery Mahiban
 Website: https://rootkitdiaries.com
@@ -10,7 +10,7 @@ forensic output (exe name, run count when available, last run timestamps, and AS
 references extracted from the prefetch blob). Correlation with ADS Hunter output is
 provided by path/hash/temporal heuristics.
 
-"""
+"
 
 import argparse
 import json
@@ -21,10 +21,10 @@ import struct
 from datetime import datetime, timedelta
 from pathlib import Path
 
-# ---------- Utility helpers ----------
+# -Utili helper-
 
 def filetime_to_dt(filetime):
-    """Convert Windows FILETIME (100-ns since 1601-01-01) to ISO string.
+    ""Convert Windows FILETIME (100-ns since 1601-01-01) to ISO string.
     Accepts integer or bytes (little-endian 64-bit)."""
     try:
         if isinstance(filetime, bytes):
@@ -54,7 +54,7 @@ def extract_ascii_strings(blob, min_len=4):
     return out
 
 
-# ---------- Prefetch parsing (best-effort) ----------
+# - Prefetch parsing -
 
 def parse_prefetch_file(path):
     """Parse a single .pf file with best-effort extraction.
@@ -177,7 +177,7 @@ def parse_prefetch_file(path):
     return result
 
 
-# ---------- ADS correlation ----------
+# -ADS correlation -
 
 def load_ads_hunter_json(path):
     """Load ADS Hunter JSON output. Expected format:
@@ -283,7 +283,7 @@ def correlate(prefetch_entries, ads_entries, time_delta_hours=24):
     return correlations
 
 
-# ---------- CLI and runner ----------
+# - CLIrunner-
 
 def main():
     parser = argparse.ArgumentParser(description='PF-ADS Correlator - Prefetch + ADS correlation (starter)')
